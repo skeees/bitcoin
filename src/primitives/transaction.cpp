@@ -21,7 +21,7 @@ CTxIn::CTxIn(COutPoint prevoutIn, CScript scriptSigIn, uint32_t nSequenceIn)
     nSequence = nSequenceIn;
 }
 
-CTxIn::CTxIn(uint256 hashPrevTx, uint32_t nOut, CScript scriptSigIn, uint32_t nSequenceIn)
+CTxIn::CTxIn(TxId hashPrevTx, uint32_t nOut, CScript scriptSigIn, uint32_t nSequenceIn)
 {
     prevout = COutPoint(hashPrevTx, nOut);
     scriptSig = scriptSigIn;
@@ -57,22 +57,22 @@ std::string CTxOut::ToString() const
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0) {}
 CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime) {}
 
-uint256 CMutableTransaction::GetHash() const
+TxId CMutableTransaction::GetHash() const
 {
-    return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
+    return TxId(SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS));
 }
 
-uint256 CTransaction::ComputeHash() const
+TxId CTransaction::ComputeHash() const
 {
-    return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
+    return TxId(SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS));
 }
 
-uint256 CTransaction::GetWitnessHash() const
+WTxId CTransaction::GetWitnessHash() const
 {
     if (!HasWitness()) {
-        return GetHash();
+        return WTxId(GetHash());
     }
-    return SerializeHash(*this, SER_GETHASH, 0);
+    return WTxId(SerializeHash(*this, SER_GETHASH, 0));
 }
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
