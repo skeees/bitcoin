@@ -246,7 +246,7 @@ UniValue prioritisetransaction(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    uint256 hash = ParseHashStr(request.params[0].get_str(), "txid");
+    TxId hash = TxId(ParseHashStr(request.params[0].get_str(), "txid"));
     CAmount nAmount = request.params[2].get_int64();
 
     if (!(request.params[1].isNull() || request.params[1].get_real() == 0)) {

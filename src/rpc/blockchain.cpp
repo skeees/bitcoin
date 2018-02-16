@@ -416,7 +416,7 @@ UniValue mempoolToJSON(bool fVerbose)
         UniValue o(UniValue::VOBJ);
         for (const CTxMemPoolEntry& e : mempool.mapTx)
         {
-            const uint256& hash = e.GetTx().GetHash();
+            const TxId& hash = e.GetTx().GetHash();
             UniValue info(UniValue::VOBJ);
             entryToJSON(info, e);
             o.pushKV(hash.ToString(), info);
@@ -425,11 +425,11 @@ UniValue mempoolToJSON(bool fVerbose)
     }
     else
     {
-        std::vector<uint256> vtxid;
+        std::vector<TxId> vtxid;
         mempool.queryHashes(vtxid);
 
         UniValue a(UniValue::VARR);
-        for (const uint256& hash : vtxid)
+        for (const TxId& hash : vtxid)
             a.push_back(hash.ToString());
 
         return a;
@@ -498,7 +498,7 @@ UniValue getmempoolancestors(const JSONRPCRequest& request)
     if (!request.params[1].isNull())
         fVerbose = request.params[1].get_bool();
 
-    uint256 hash = ParseHashV(request.params[0], "parameter 1");
+    TxId hash = TxId(ParseHashV(request.params[0], "parameter 1"));
 
     LOCK(mempool.cs);
 
@@ -523,7 +523,7 @@ UniValue getmempoolancestors(const JSONRPCRequest& request)
         UniValue o(UniValue::VOBJ);
         for (CTxMemPool::txiter ancestorIt : setAncestors) {
             const CTxMemPoolEntry &e = *ancestorIt;
-            const uint256& _hash = e.GetTx().GetHash();
+            const TxId& _hash = e.GetTx().GetHash();
             UniValue info(UniValue::VOBJ);
             entryToJSON(info, e);
             o.pushKV(_hash.ToString(), info);
@@ -562,7 +562,7 @@ UniValue getmempooldescendants(const JSONRPCRequest& request)
     if (!request.params[1].isNull())
         fVerbose = request.params[1].get_bool();
 
-    uint256 hash = ParseHashV(request.params[0], "parameter 1");
+    TxId hash = TxId(ParseHashV(request.params[0], "parameter 1"));
 
     LOCK(mempool.cs);
 
@@ -614,7 +614,7 @@ UniValue getmempoolentry(const JSONRPCRequest& request)
         );
     }
 
-    uint256 hash = ParseHashV(request.params[0], "parameter 1");
+    TxId hash = TxId(ParseHashV(request.params[0], "parameter 1"));
 
     LOCK(mempool.cs);
 
@@ -1009,7 +1009,7 @@ UniValue gettxout(const JSONRPCRequest& request)
     UniValue ret(UniValue::VOBJ);
 
     std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    TxId hash(uint256S(strHash));
     int n = request.params[1].get_int();
     COutPoint out(hash, n);
     bool fMempool = true;
@@ -1563,7 +1563,7 @@ UniValue getchaintxstats(const JSONRPCRequest& request)
             pindex = chainActive.Tip();
         }
     }
-    
+
     assert(pindex != nullptr);
 
     if (request.params[0].isNull()) {

@@ -144,7 +144,7 @@ UniValue getrawtransaction(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     bool in_active_chain = true;
-    uint256 hash = ParseHashV(request.params[0], "parameter 1");
+    TxId hash(ParseHashV(request.params[0], "parameter 1"));
     CBlockIndex* blockindex = nullptr;
 
     if (hash == Params().GenesisBlock().hashMerkleRoot) {
@@ -216,14 +216,14 @@ UniValue gettxoutproof(const JSONRPCRequest& request)
             "\"data\"           (string) A string that is a serialized, hex-encoded data for the proof.\n"
         );
 
-    std::set<uint256> setTxids;
-    uint256 oneTxid;
+    std::set<TxId> setTxids;
+    TxId oneTxid;
     UniValue txids = request.params[0].get_array();
     for (unsigned int idx = 0; idx < txids.size(); idx++) {
         const UniValue& txid = txids[idx];
         if (txid.get_str().length() != 64 || !IsHex(txid.get_str()))
             throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid txid ")+txid.get_str());
-        uint256 hash(uint256S(txid.get_str()));
+        TxId hash(uint256S(txid.get_str()));
         if (setTxids.count(hash))
             throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated txid: ")+txid.get_str());
        setTxids.insert(hash);
@@ -376,7 +376,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
         const UniValue& input = inputs[idx];
         const UniValue& o = input.get_obj();
 
-        uint256 txid = ParseHashO(o, "txid");
+        TxId txid(ParseHashO(o, "txid"));
 
         const UniValue& vout_v = find_value(o, "vout");
         if (!vout_v.isNum())
@@ -805,7 +805,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
                     {"scriptPubKey", UniValueType(UniValue::VSTR)},
                 });
 
-            uint256 txid = ParseHashO(prevOut, "txid");
+            TxId txid(ParseHashO(prevOut, "txid"));
 
             int nOut = find_value(prevOut, "vout").get_int();
             if (nOut < 0)
@@ -959,7 +959,7 @@ UniValue sendrawtransaction(const JSONRPCRequest& request)
     if (!DecodeHexTx(mtx, request.params[0].get_str()))
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
-    const uint256& hashTx = tx->GetHash();
+    const TxId& hashTx = tx->GetHash();
 
     CAmount nMaxRawTxFee = maxTxFee;
     if (!request.params[1].isNull() && request.params[1].get_bool())

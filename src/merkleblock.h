@@ -147,7 +147,7 @@ public:
     CMerkleBlock(const CBlock& block, CBloomFilter& filter) : CMerkleBlock(block, &filter, nullptr) { }
 
     // Create from a CBlock, matching the txids in the set
-    CMerkleBlock(const CBlock& block, const std::set<uint256>& txids) : CMerkleBlock(block, nullptr, &txids) { }
+    CMerkleBlock(const CBlock& block, const std::set<TxId>& txids) : CMerkleBlock(block, nullptr, &txids) { }
 
     CMerkleBlock() {}
 
@@ -161,7 +161,7 @@ public:
 
 private:
     // Combined constructor to consolidate code
-    CMerkleBlock(const CBlock& block, CBloomFilter* filter, const std::set<uint256>* txids);
+    CMerkleBlock(const CBlock& block, CBloomFilter* filter, const std::set<TxId>* txids);
 };
 
 #endif // BITCOIN_MERKLEBLOCK_H

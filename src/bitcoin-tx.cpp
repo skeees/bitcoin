@@ -236,7 +236,7 @@ static void MutateTxAddInput(CMutableTransaction& tx, const std::string& strInpu
     std::string strTxid = vStrInputParts[0];
     if ((strTxid.size() != 64) || !IsHex(strTxid))
         throw std::runtime_error("invalid TX input txid");
-    uint256 txid(uint256S(strTxid));
+    TxId txid(uint256S(strTxid));
 
     static const unsigned int minTxOutSz = 9;
     static const unsigned int maxVout = MAX_BLOCK_WEIGHT / (WITNESS_SCALE_FACTOR * minTxOutSz);
@@ -590,7 +590,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
             if (!prevOut.checkObject(types))
                 throw std::runtime_error("prevtxs internal object typecheck fail");
 
-            uint256 txid = ParseHashUV(prevOut["txid"], "txid");
+            TxId txid = TxId(ParseHashUV(prevOut["txid"], "txid"));
 
             int nOut = atoi(prevOut["vout"].getValStr());
             if (nOut < 0)

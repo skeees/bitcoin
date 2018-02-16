@@ -2141,7 +2141,7 @@ UniValue gettransaction(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    uint256 hash;
+    TxId hash;
     hash.SetHex(request.params[0].get_str());
 
     isminefilter filter = ISMINE_SPENDABLE;
@@ -2209,7 +2209,7 @@ UniValue abandontransaction(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    uint256 hash;
+    TxId hash;
     hash.SetHex(request.params[0].get_str());
 
     if (!pwallet->mapWallet.count(hash)) {
@@ -2619,7 +2619,7 @@ UniValue lockunspent(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, vout must be positive");
         }
 
-        const COutPoint outpt(uint256S(txid), nOutput);
+        const COutPoint outpt(TxId(uint256S(txid)), nOutput);
 
         const auto it = pwallet->mapWallet.find(outpt.hash);
         if (it == pwallet->mapWallet.end()) {
@@ -2861,9 +2861,9 @@ UniValue resendwallettransactions(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: Wallet transaction broadcasting is disabled with -walletbroadcast");
     }
 
-    std::vector<uint256> txids = pwallet->ResendWalletTransactionsBefore(GetTime(), g_connman.get());
+    std::vector<TxId> txids = pwallet->ResendWalletTransactionsBefore(GetTime(), g_connman.get());
     UniValue result(UniValue::VARR);
-    for (const uint256& txid : txids)
+    for (const TxId& txid : txids)
     {
         result.push_back(txid.ToString());
     }
@@ -3291,7 +3291,7 @@ UniValue bumpfee(const JSONRPCRequest& request)
     }
 
     RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VOBJ});
-    uint256 hash;
+    TxId hash;
     hash.SetHex(request.params[0].get_str());
 
     // optional parameters
@@ -3368,7 +3368,7 @@ UniValue bumpfee(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, "Can't sign transaction.");
     }
     // commit the bumped transaction
-    uint256 txid;
+    TxId txid;
     if (feebumper::CommitTransaction(pwallet, hash, std::move(mtx), errors, txid) != feebumper::Result::OK) {
         throw JSONRPCError(RPC_WALLET_ERROR, errors[0]);
     }

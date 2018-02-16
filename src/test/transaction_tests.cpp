@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(tx_valid)
                     fValid = false;
                     break;
                 }
-                COutPoint outpoint(uint256S(vinput[0].get_str()), vinput[1].get_int());
+                COutPoint outpoint(TxId(uint256S(vinput[0].get_str())), vinput[1].get_int());
                 mapprevOutScriptPubKeys[outpoint] = ParseScript(vinput[2].get_str());
                 if (vinput.size() >= 4)
                 {
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(tx_invalid)
                     fValid = false;
                     break;
                 }
-                COutPoint outpoint(uint256S(vinput[0].get_str()), vinput[1].get_int());
+                COutPoint outpoint(TxId(uint256S(vinput[0].get_str())), vinput[1].get_int());
                 mapprevOutScriptPubKeys[outpoint] = ParseScript(vinput[2].get_str());
                 if (vinput.size() >= 4)
                 {
@@ -435,7 +435,7 @@ BOOST_AUTO_TEST_CASE(test_big_witness_transaction) {
     // create a big transaction of 4500 inputs signed by the same key
     for(uint32_t ij = 0; ij < 4500; ij++) {
         uint32_t i = mtx.vin.size();
-        uint256 prevId;
+        TxId prevId;
         prevId.SetHex("0000000000000000000000000000000000000000000000000000000000000100");
         COutPoint outpoint(prevId, i);
 

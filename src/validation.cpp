@@ -351,7 +351,7 @@ bool CheckSequenceLocks(const CTransaction &tx, int flags, LockPoints* lp, bool 
 
     CBlockIndex* tip = chainActive.Tip();
     assert(tip != nullptr);
-    
+
     CBlockIndex index;
     index.pprev = tip;
     // CheckSequenceLocks() uses chainActive.Height()+1 to evaluate
@@ -468,7 +468,7 @@ static bool IsCurrentForFeeEstimation()
 void UpdateMempoolForReorg(DisconnectedBlockTransactions &disconnectpool, bool fAddToMempool)
 {
     AssertLockHeld(cs_main);
-    std::vector<uint256> vHashUpdate;
+    std::vector<TxId> vHashUpdate;
     // disconnectpool's insertion_order index sorts the entries from
     // oldest to newest, but the oldest entry will be the last tx from the
     // latest mined block that was disconnected.
@@ -545,7 +545,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
                               bool bypass_limits, const CAmount& nAbsurdFee, std::vector<COutPoint>& coins_to_uncache)
 {
     const CTransaction& tx = *ptx;
-    const uint256 hash = tx.GetHash();
+    const TxId hash = tx.GetHash();
     AssertLockHeld(cs_main);
     LOCK(pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
     if (pfMissingInputs) {
@@ -582,7 +582,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     }
 
     // Check for conflicts with in-memory transactions
-    std::set<uint256> setConflicts;
+    std::set<TxId> setConflicts;
     for (const CTxIn &txin : tx.vin)
     {
         auto itConflicting = pool.mapNextTx.find(txin.prevout);
@@ -742,7 +742,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // intersect.
         for (CTxMemPool::txiter ancestorIt : setAncestors)
         {
-            const uint256 &hashAncestor = ancestorIt->GetTx().GetHash();
+            const TxId &hashAncestor = ancestorIt->GetTx().GetHash();
             if (setConflicts.count(hashAncestor))
             {
                 return state.DoS(10, false,
@@ -767,10 +767,10 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         if (fReplacementTransaction)
         {
             CFeeRate newFeeRate(nModifiedFees, nSize);
-            std::set<uint256> setConflictsParents;
+            std::set<TxId> setConflictsParents;
             const int maxDescendantsToVisit = 100;
             CTxMemPool::setEntries setIterConflicting;
-            for (const uint256 &hashConflicting : setConflicts)
+            for (const TxId &hashConflicting : setConflicts)
             {
                 CTxMemPool::txiter mi = pool.mapTx.find(hashConflicting);
                 if (mi == pool.mapTx.end())
@@ -999,7 +999,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
  * Return transaction in txOut, and if it was found inside a block, its hash is placed in hashBlock.
  * If blockIndex is provided, the transaction is fetched from the corresponding block.
  */
-bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus::Params& consensusParams, uint256& hashBlock, bool fAllowSlow, CBlockIndex* blockIndex)
+bool GetTransaction(const TxId& hash, CTransactionRef& txOut, const Consensus::Params& consensusParams, uint256& hashBlock, bool fAllowSlow, CBlockIndex* blockIndex)
 {
     CBlockIndex* pindexSlow = blockIndex;
 
@@ -1565,7 +1565,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     // undo transactions in reverse order
     for (int i = block.vtx.size() - 1; i >= 0; i--) {
         const CTransaction &tx = *(block.vtx[i]);
-        uint256 hash = tx.GetHash();
+        TxId hash = tx.GetHash();
         bool is_coinbase = tx.IsCoinBase();
 
         // Check that all outputs are available and match the outputs in the block itself
@@ -1653,7 +1653,7 @@ static bool WriteTxIndexDataForBlock(const CBlock& block, CValidationState& stat
     if (!fTxIndex) return true;
 
     CDiskTxPos pos(pindex->GetBlockPos(), GetSizeOfCompactSize(block.vtx.size()));
-    std::vector<std::pair<uint256, CDiskTxPos> > vPos;
+    std::vector<std::pair<TxId, CDiskTxPos> > vPos;
     vPos.reserve(block.vtx.size());
     for (const CTransactionRef& tx : block.vtx)
     {
@@ -4593,7 +4593,7 @@ bool LoadMempool(void)
             if (ShutdownRequested())
                 return false;
         }
-        std::map<uint256, CAmount> mapDeltas;
+        std::map<TxId, CAmount> mapDeltas;
         file >> mapDeltas;
 
         for (const auto& i : mapDeltas) {
@@ -4612,7 +4612,7 @@ bool DumpMempool(void)
 {
     int64_t start = GetTimeMicros();
 
-    std::map<uint256, CAmount> mapDeltas;
+    std::map<TxId, CAmount> mapDeltas;
     std::vector<TxMempoolInfo> vinfo;
 
     {

@@ -10,7 +10,7 @@
 #include <utilstrencodings.h>
 
 
-CMerkleBlock::CMerkleBlock(const CBlock& block, CBloomFilter* filter, const std::set<uint256>* txids)
+CMerkleBlock::CMerkleBlock(const CBlock& block, CBloomFilter* filter, const std::set<TxId>* txids)
 {
     header = block.GetBlockHeader();
 
@@ -22,7 +22,7 @@ CMerkleBlock::CMerkleBlock(const CBlock& block, CBloomFilter* filter, const std:
 
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
-        const uint256& hash = block.vtx[i]->GetHash();
+        const TxId& hash = block.vtx[i]->GetHash();
         if (txids && txids->count(hash)) {
             vMatch.push_back(true);
         } else if (filter && filter->IsRelevantAndUpdate(*block.vtx[i])) {

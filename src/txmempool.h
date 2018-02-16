@@ -185,7 +185,7 @@ private:
 // extracts a transaction hash from CTxMempoolEntry or CTransactionRef
 struct mempoolentry_txid
 {
-    typedef uint256 result_type;
+    typedef TxId result_type;
     result_type operator() (const CTxMemPoolEntry &entry) const
     {
         return entry.GetTx().GetHash();
@@ -360,7 +360,7 @@ private:
 public:
     SaltedTxidHasher();
 
-    size_t operator()(const uint256& txid) const {
+    size_t operator()(const TxId& txid) const {
         return SipHashUint256(k0, k1, txid);
     }
 };
@@ -487,7 +487,7 @@ public:
     indexed_transaction_set mapTx;
 
     typedef indexed_transaction_set::nth_index<0>::type::iterator txiter;
-    std::vector<std::pair<uint256, txiter> > vTxHashes; //!< All tx witness hashes/entries in mapTx, in random order
+    std::vector<std::pair<WTxId, txiter> > vTxHashes; //!< All tx witness hashes/entries in mapTx, in random order
 
     struct CompareIteratorByHash {
         bool operator()(const txiter &a, const txiter &b) const {
@@ -516,7 +516,7 @@ private:
 
 public:
     indirectmap<COutPoint, const CTransaction*> mapNextTx;
-    std::map<uint256, CAmount> mapDeltas;
+    std::map<TxId, CAmount> mapDeltas;
 
     /** Create a new CTxMemPool.
      */
@@ -538,8 +538,8 @@ public:
     // Note that addUnchecked is ONLY called from ATMP outside of tests
     // and any other callers may break wallet's in-mempool tracking (due to
     // lack of CValidationInterface::TransactionAddedToMempool callbacks).
-    bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, bool validFeeEstimate = true);
-    bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool validFeeEstimate = true);
+    bool addUnchecked(const TxId& hash, const CTxMemPoolEntry &entry, bool validFeeEstimate = true);
+    bool addUnchecked(const TxId& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool validFeeEstimate = true);
 
     void removeRecursive(const CTransaction &tx, MemPoolRemovalReason reason = MemPoolRemovalReason::UNKNOWN);
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags);
@@ -548,8 +548,8 @@ public:
 
     void clear();
     void _clear(); //lock free
-    bool CompareDepthAndScore(const uint256& hasha, const uint256& hashb);
-    void queryHashes(std::vector<uint256>& vtxid);
+    bool CompareDepthAndScore(const TxId& hasha, const TxId& hashb);
+    void queryHashes(std::vector<TxId>& vtxid);
     bool isSpent(const COutPoint& outpoint);
     unsigned int GetTransactionsUpdated() const;
     void AddTransactionsUpdated(unsigned int n);
@@ -560,9 +560,9 @@ public:
     bool HasNoInputsOf(const CTransaction& tx) const;
 
     /** Affect CreateNewBlock prioritisation of transactions */
-    void PrioritiseTransaction(const uint256& hash, const CAmount& nFeeDelta);
-    void ApplyDelta(const uint256 hash, CAmount &nFeeDelta) const;
-    void ClearPrioritisation(const uint256 hash);
+    void PrioritiseTransaction(const TxId& hash, const CAmount& nFeeDelta);
+    void ApplyDelta(const TxId hash, CAmount &nFeeDelta) const;
+    void ClearPrioritisation(const TxId hash);
 
 public:
     /** Remove a set of transactions from the mempool.
@@ -583,7 +583,7 @@ public:
      *  for).  Note: vHashesToUpdate should be the set of transactions from the
      *  disconnected block that have been accepted back into the mempool.
      */
-    void UpdateTransactionsFromBlock(const std::vector<uint256> &vHashesToUpdate);
+    void UpdateTransactionsFromBlock(const std::vector<TxId> &vHashesToUpdate);
 
     /** Try to calculate all in-mempool ancestors of entry.
      *  (these are all calculated including the tx itself)
@@ -620,7 +620,7 @@ public:
     int Expire(int64_t time);
 
     /** Returns false if the transaction is in the mempool and not within the chain limit specified. */
-    bool TransactionWithinChainLimit(const uint256& txid, size_t chainLimit) const;
+    bool TransactionWithinChainLimit(const TxId& txid, size_t chainLimit) const;
 
     unsigned long size()
     {
@@ -634,14 +634,14 @@ public:
         return totalTxSize;
     }
 
-    bool exists(uint256 hash) const
+    bool exists(TxId hash) const
     {
         LOCK(cs);
         return (mapTx.count(hash) != 0);
     }
 
-    CTransactionRef get(const uint256& hash) const;
-    TxMempoolInfo info(const uint256& hash) const;
+    CTransactionRef get(const TxId& hash) const;
+    TxMempoolInfo info(const TxId& hash) const;
     std::vector<TxMempoolInfo> infoAll() const;
 
     size_t DynamicMemoryUsage() const;
@@ -665,7 +665,7 @@ private:
      */
     void UpdateForDescendants(txiter updateIt,
             cacheMap &cachedDescendants,
-            const std::set<uint256> &setExclude);
+            const std::set<TxId> &setExclude);
     /** Update ancestors of hash to add/remove it as a descendant transaction. */
     void UpdateAncestorsOf(bool add, txiter hash, setEntries &setAncestors);
     /** Set ancestor state for an entry */
@@ -688,7 +688,7 @@ private:
     void removeUnchecked(txiter entry, MemPoolRemovalReason reason = MemPoolRemovalReason::UNKNOWN);
 };
 
-/** 
+/**
  * CCoinsView that brings transactions from a memorypool into view.
  * It does not check for spendings by memory pool transactions.
  * Instead, it provides access to all Coins which are either unspent in the

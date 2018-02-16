@@ -89,7 +89,7 @@ static feebumper::Result PreconditionChecks(const CWallet* wallet, const CWallet
 
 namespace feebumper {
 
-bool TransactionCanBeBumped(const CWallet* wallet, const uint256& txid)
+bool TransactionCanBeBumped(const CWallet* wallet, const TxId& txid)
 {
     LOCK2(cs_main, wallet->cs_wallet);
     const CWalletTx* wtx = wallet->GetWalletTx(txid);
@@ -100,7 +100,7 @@ bool TransactionCanBeBumped(const CWallet* wallet, const uint256& txid)
     return res == feebumper::Result::OK;
 }
 
-Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoinControl& coin_control, CAmount total_fee, std::vector<std::string>& errors,
+Result CreateTransaction(const CWallet* wallet, const TxId& txid, const CCoinControl& coin_control, CAmount total_fee, std::vector<std::string>& errors,
                          CAmount& old_fee, CAmount& new_fee, CMutableTransaction& mtx)
 {
     LOCK2(cs_main, wallet->cs_wallet);
@@ -243,7 +243,7 @@ bool SignTransaction(CWallet* wallet, CMutableTransaction& mtx) {
     return wallet->SignTransaction(mtx);
 }
 
-Result CommitTransaction(CWallet* wallet, const uint256& txid, CMutableTransaction&& mtx, std::vector<std::string>& errors, uint256& bumped_txid)
+Result CommitTransaction(CWallet* wallet, const TxId& txid, CMutableTransaction&& mtx, std::vector<std::string>& errors, TxId& bumped_txid)
 {
     LOCK2(cs_main, wallet->cs_wallet);
     if (!errors.empty()) {
@@ -297,4 +297,3 @@ Result CommitTransaction(CWallet* wallet, const uint256& txid, CMutableTransacti
 }
 
 } // namespace feebumper
-

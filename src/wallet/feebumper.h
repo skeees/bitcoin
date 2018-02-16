@@ -26,11 +26,11 @@ enum class Result
 };
 
 //! Return whether transaction can be bumped.
-bool TransactionCanBeBumped(const CWallet* wallet, const uint256& txid);
+bool TransactionCanBeBumped(const CWallet* wallet, const TxId& txid);
 
 //! Create bumpfee transaction.
 Result CreateTransaction(const CWallet* wallet,
-                         const uint256& txid,
+                         const TxId& txid,
                          const CCoinControl& coin_control,
                          CAmount total_fee,
                          std::vector<std::string>& errors,
@@ -48,10 +48,10 @@ bool SignTransaction(CWallet* wallet, CMutableTransaction& mtx);
 //! but sets errors if the tx could not be added to the mempool (will try later)
 //! or if the old transaction could not be marked as replaced.
 Result CommitTransaction(CWallet* wallet,
-                         const uint256& txid,
+                         const TxId& txid,
                          CMutableTransaction&& mtx,
                          std::vector<std::string>& errors,
-                         uint256& bumped_txid);
+                         TxId& bumped_txid);
 
 } // namespace feebumper
 

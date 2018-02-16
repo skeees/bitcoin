@@ -86,7 +86,7 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
 
 void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool check) {
     bool fCoinbase = tx.IsCoinBase();
-    const uint256& txid = tx.GetHash();
+    const TxId& txid = tx.GetHash();
     for (size_t i = 0; i < tx.vout.size(); ++i) {
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
@@ -247,7 +247,7 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
 static const size_t MIN_TRANSACTION_OUTPUT_WEIGHT = WITNESS_SCALE_FACTOR * ::GetSerializeSize(CTxOut(), SER_NETWORK, PROTOCOL_VERSION);
 static const size_t MAX_OUTPUTS_PER_BLOCK = MAX_BLOCK_WEIGHT / MIN_TRANSACTION_OUTPUT_WEIGHT;
 
-const Coin& AccessByTxid(const CCoinsViewCache& view, const uint256& txid)
+const Coin& AccessByTxid(const CCoinsViewCache& view, const TxId& txid)
 {
     COutPoint iter(txid, 0);
     while (iter.n < MAX_OUTPUTS_PER_BLOCK) {

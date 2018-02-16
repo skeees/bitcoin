@@ -23,7 +23,7 @@ CBlockHeaderAndShortTxIDs::CBlockHeaderAndShortTxIDs(const CBlock& block, bool f
     prefilledtxn[0] = {0, block.vtx[0]};
     for (size_t i = 1; i < block.vtx.size(); i++) {
         const CTransaction& tx = *block.vtx[i];
-        shorttxids[i - 1] = GetShortID(fUseWTXID ? tx.GetWitnessHash() : tx.GetHash());
+        shorttxids[i - 1] = GetShortID(fUseWTXID ? (uint256)tx.GetWitnessHash() : (uint256)tx.GetHash());
     }
 }
 
@@ -104,7 +104,7 @@ ReadStatus PartiallyDownloadedBlock::InitData(const CBlockHeaderAndShortTxIDs& c
     std::vector<bool> have_txn(txn_available.size());
     {
     LOCK(pool->cs);
-    const std::vector<std::pair<uint256, CTxMemPool::txiter> >& vTxHashes = pool->vTxHashes;
+    const std::vector<std::pair<WTxId, CTxMemPool::txiter> >& vTxHashes = pool->vTxHashes;
     for (size_t i = 0; i < vTxHashes.size(); i++) {
         uint64_t shortid = cmpctblock.GetShortID(vTxHashes[i].first);
         std::unordered_map<uint64_t, uint16_t>::iterator idit = shorttxids.find(shortid);

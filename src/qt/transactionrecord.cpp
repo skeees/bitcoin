@@ -6,6 +6,7 @@
 
 #include <base58.h>
 #include <consensus/consensus.h>
+#include <primitives/transaction.h>
 #include <validation.h>
 #include <timedata.h>
 #include <wallet/wallet.h>
@@ -32,7 +33,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     CAmount nCredit = wtx.GetCredit(ISMINE_ALL);
     CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
-    uint256 hash = wtx.GetHash();
+    TxId hash = wtx.GetHash();
     std::map<std::string, std::string> mapValue = wtx.mapValue;
 
     if (nNet > 0 || wtx.IsCoinBase())

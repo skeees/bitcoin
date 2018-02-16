@@ -30,7 +30,6 @@ class COutPoint;
 class COutput;
 class CPubKey;
 class CWallet;
-class uint256;
 
 QT_BEGIN_NAMESPACE
 class QTimer;
@@ -198,7 +197,7 @@ public:
     bool isSpent(const COutPoint& outpoint) const;
     void listCoins(std::map<QString, std::vector<COutput> >& mapCoins) const;
 
-    bool isLockedCoin(uint256 hash, unsigned int n) const;
+    bool isLockedCoin(TxId hash, unsigned int n) const;
     void lockCoin(COutPoint& output);
     void unlockCoin(COutPoint& output);
     void listLockedCoins(std::vector<COutPoint>& vOutpts);
@@ -206,11 +205,11 @@ public:
     void loadReceiveRequests(std::vector<std::string>& vReceiveRequests);
     bool saveReceiveRequest(const std::string &sAddress, const int64_t nId, const std::string &sRequest);
 
-    bool transactionCanBeAbandoned(uint256 hash) const;
-    bool abandonTransaction(uint256 hash) const;
+    bool transactionCanBeAbandoned(TxId hash) const;
+    bool abandonTransaction(TxId hash) const;
 
-    bool transactionCanBeBumped(uint256 hash) const;
-    bool bumpFee(uint256 hash);
+    bool transactionCanBeBumped(TxId hash) const;
+    bool bumpFee(TxId hash);
 
     static bool isWalletEnabled();
 

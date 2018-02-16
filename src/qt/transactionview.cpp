@@ -392,7 +392,7 @@ void TransactionView::contextualMenu(const QPoint &point)
         return;
 
     // check if transaction can be abandoned, disable context menu action in case it doesn't
-    uint256 hash;
+    TxId hash;
     hash.SetHex(selection.at(0).data(TransactionTableModel::TxHashRole).toString().toStdString());
     abandonAction->setEnabled(model->transactionCanBeAbandoned(hash));
     bumpFeeAction->setEnabled(model->transactionCanBeBumped(hash));
@@ -410,7 +410,7 @@ void TransactionView::abandonTx()
     QModelIndexList selection = transactionView->selectionModel()->selectedRows(0);
 
     // get the hash from the TxHashRole (QVariant / QString)
-    uint256 hash;
+    TxId hash;
     QString hashQStr = selection.at(0).data(TransactionTableModel::TxHashRole).toString();
     hash.SetHex(hashQStr.toStdString());
 
@@ -428,7 +428,7 @@ void TransactionView::bumpFee()
     QModelIndexList selection = transactionView->selectionModel()->selectedRows(0);
 
     // get the hash from the TxHashRole (QVariant / QString)
-    uint256 hash;
+    TxId hash;
     QString hashQStr = selection.at(0).data(TransactionTableModel::TxHashRole).toString();
     hash.SetHex(hashQStr.toStdString());
 

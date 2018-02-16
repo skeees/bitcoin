@@ -177,7 +177,7 @@ public:
     bool ErasePurpose(const std::string& strAddress);
 
     bool WriteTx(const CWalletTx& wtx);
-    bool EraseTx(uint256 hash);
+    bool EraseTx(TxId hash);
 
     bool WriteKey(const CPubKey& vchPubKey, const CPrivKey& vchPrivKey, const CKeyMetadata &keyMeta);
     bool WriteCryptedKey(const CPubKey& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, const CKeyMetadata &keyMeta);
@@ -214,9 +214,9 @@ public:
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& acentries);
 
     DBErrors LoadWallet(CWallet* pwallet);
-    DBErrors FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);
+    DBErrors FindWalletTx(std::vector<TxId>& vTxHash, std::vector<CWalletTx>& vWtx);
     DBErrors ZapWalletTx(std::vector<CWalletTx>& vWtx);
-    DBErrors ZapSelectTx(std::vector<uint256>& vHashIn, std::vector<uint256>& vHashOut);
+    DBErrors ZapSelectTx(std::vector<TxId>& vHashIn, std::vector<TxId>& vHashOut);
     /* Try to (very carefully!) recover wallet database (with a possible key type filter) */
     static bool Recover(const std::string& filename, void *callbackDataIn, bool (*recoverKVcallback)(void* callbackData, CDataStream ssKey, CDataStream ssValue), std::string& out_backup_filename);
     /* Recover convenience-function to bypass the key filter callback, called when verify fails, recovers everything */

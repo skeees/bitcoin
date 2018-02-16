@@ -64,7 +64,7 @@ void ConfirmSend(QString* text = nullptr, bool cancel = false)
 }
 
 //! Send coins to address and return txid.
-uint256 SendCoins(CWallet& wallet, SendCoinsDialog& sendCoinsDialog, const CTxDestination& address, CAmount amount, bool rbf)
+TxId SendCoins(CWallet& wallet, SendCoinsDialog& sendCoinsDialog, const CTxDestination& address, CAmount amount, bool rbf)
 {
     QVBoxLayout* entries = sendCoinsDialog.findChild<QVBoxLayout*>("entries");
     SendCoinsEntry* entry = qobject_cast<SendCoinsEntry*>(entries->itemAt(0)->widget());
@@ -74,8 +74,8 @@ uint256 SendCoins(CWallet& wallet, SendCoinsDialog& sendCoinsDialog, const CTxDe
         ->findChild<QFrame*>("frameFeeSelection")
         ->findChild<QCheckBox*>("optInRBF")
         ->setCheckState(rbf ? Qt::Checked : Qt::Unchecked);
-    uint256 txid;
-    boost::signals2::scoped_connection c(wallet.NotifyTransactionChanged.connect([&txid](CWallet*, const uint256& hash, ChangeType status) {
+    TxId txid;
+    boost::signals2::scoped_connection c(wallet.NotifyTransactionChanged.connect([&txid](CWallet*, const TxId& hash, ChangeType status) {
         if (status == CT_NEW) txid = hash;
     }));
     ConfirmSend();
@@ -84,7 +84,7 @@ uint256 SendCoins(CWallet& wallet, SendCoinsDialog& sendCoinsDialog, const CTxDe
 }
 
 //! Find index of txid in transaction list.
-QModelIndex FindTx(const QAbstractItemModel& model, const uint256& txid)
+QModelIndex FindTx(const QAbstractItemModel& model, const TxId& txid)
 {
     QString hash = QString::fromStdString(txid.ToString());
     int rows = model.rowCount({});
@@ -109,7 +109,7 @@ void RequestContextMenu(QWidget* widget)
 }
 
 //! Invoke bumpfee on txid and check results.
-void BumpFee(TransactionView& view, const uint256& txid, bool expectDisabled, std::string expectError, bool cancel)
+void BumpFee(TransactionView& view, const TxId& txid, bool expectDisabled, std::string expectError, bool cancel)
 {
     QTableView* table = view.findChild<QTableView*>("transactionView");
     QModelIndex index = FindTx(*table->selectionModel()->model(), txid);
@@ -187,8 +187,8 @@ void TestGUI()
     // Send two transactions, and verify they are added to transaction list.
     TransactionTableModel* transactionTableModel = walletModel.getTransactionTableModel();
     QCOMPARE(transactionTableModel->rowCount({}), 105);
-    uint256 txid1 = SendCoins(wallet, sendCoinsDialog, CKeyID(), 5 * COIN, false /* rbf */);
-    uint256 txid2 = SendCoins(wallet, sendCoinsDialog, CKeyID(), 10 * COIN, true /* rbf */);
+    TxId txid1 = SendCoins(wallet, sendCoinsDialog, CKeyID(), 5 * COIN, false /* rbf */);
+    TxId txid2 = SendCoins(wallet, sendCoinsDialog, CKeyID(), 10 * COIN, true /* rbf */);
     QCOMPARE(transactionTableModel->rowCount({}), 107);
     QVERIFY(FindTx(*transactionTableModel, txid1).isValid());
     QVERIFY(FindTx(*transactionTableModel, txid2).isValid());

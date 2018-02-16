@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
     // added to the mempool by their associate fee
     // txHashes[j] is populated with transactions either of
     // fee = basefee * (j+1)
-    std::vector<uint256> txHashes[10];
+    std::vector<TxId> txHashes[10];
 
     // Create a transaction template
     CScript garbage;
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
         for (int j = 0; j < 10; j++) { // For each fee
             for (int k = 0; k < 4; k++) { // add 4 fee txs
                 tx.vin[0].prevout.n = 10000*blocknum+100*j+k; // make transaction unique
-                uint256 hash = tx.GetHash();
+                TxId hash = tx.GetHash();
                 mpool.addUnchecked(hash, entry.Fee(feeV[j]).Time(GetTime()).Height(blocknum).FromTx(tx));
                 txHashes[j].push_back(hash);
             }
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
         for (int j = 0; j < 10; j++) { // For each fee multiple
             for (int k = 0; k < 4; k++) { // add 4 fee txs
                 tx.vin[0].prevout.n = 10000*blocknum+100*j+k;
-                uint256 hash = tx.GetHash();
+                TxId hash = tx.GetHash();
                 mpool.addUnchecked(hash, entry.Fee(feeV[j]).Time(GetTime()).Height(blocknum).FromTx(tx));
                 txHashes[j].push_back(hash);
             }
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
         for (int j = 0; j < 10; j++) { // For each fee multiple
             for (int k = 0; k < 4; k++) { // add 4 fee txs
                 tx.vin[0].prevout.n = 10000*blocknum+100*j+k;
-                uint256 hash = tx.GetHash();
+                TxId hash = tx.GetHash();
                 mpool.addUnchecked(hash, entry.Fee(feeV[j]).Time(GetTime()).Height(blocknum).FromTx(tx));
                 CTransactionRef ptx = mpool.get(hash);
                 if (ptx)

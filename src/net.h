@@ -15,6 +15,7 @@
 #include <limitedmap.h>
 #include <netaddress.h>
 #include <policy/feerate.h>
+#include <primitives/transaction.h>
 #include <protocol.h>
 #include <random.h>
 #include <streams.h>
@@ -679,7 +680,7 @@ public:
     CRollingBloomFilter filterInventoryKnown;
     // Set of transaction ids we still have to announce.
     // They are sorted by the mempool before relay, so the order is not important.
-    std::set<uint256> setInventoryTxToSend;
+    std::set<TxId> setInventoryTxToSend;
     // List of block ids we still have announce.
     // There is no final sorting before sending, as they are always sent immediately
     // and in the order requested.
@@ -821,7 +822,7 @@ public:
         LOCK(cs_inventory);
         if (inv.type == MSG_TX) {
             if (!filterInventoryKnown.contains(inv.hash)) {
-                setInventoryTxToSend.insert(inv.hash);
+                setInventoryTxToSend.insert(TxId(inv.hash));
             }
         } else if (inv.type == MSG_BLOCK) {
             vInventoryBlockToSend.push_back(inv.hash);

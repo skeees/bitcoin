@@ -476,7 +476,7 @@ static void NotifyAddressBookChanged(WalletModel *walletmodel, CWallet *wallet,
                               Q_ARG(int, status));
 }
 
-static void NotifyTransactionChanged(WalletModel *walletmodel, CWallet *wallet, const uint256 &hash, ChangeType status)
+static void NotifyTransactionChanged(WalletModel *walletmodel, CWallet *wallet, const TxId &hash, ChangeType status)
 {
     Q_UNUSED(wallet);
     Q_UNUSED(hash);
@@ -602,7 +602,7 @@ void WalletModel::listCoins(std::map<QString, std::vector<COutput> >& mapCoins) 
     }
 }
 
-bool WalletModel::isLockedCoin(uint256 hash, unsigned int n) const
+bool WalletModel::isLockedCoin(TxId hash, unsigned int n) const
 {
     LOCK2(cs_main, wallet->cs_wallet);
     return wallet->IsLockedCoin(hash, n);
@@ -646,23 +646,23 @@ bool WalletModel::saveReceiveRequest(const std::string &sAddress, const int64_t 
         return wallet->AddDestData(dest, key, sRequest);
 }
 
-bool WalletModel::transactionCanBeAbandoned(uint256 hash) const
+bool WalletModel::transactionCanBeAbandoned(TxId hash) const
 {
     return wallet->TransactionCanBeAbandoned(hash);
 }
 
-bool WalletModel::abandonTransaction(uint256 hash) const
+bool WalletModel::abandonTransaction(TxId hash) const
 {
     LOCK2(cs_main, wallet->cs_wallet);
     return wallet->AbandonTransaction(hash);
 }
 
-bool WalletModel::transactionCanBeBumped(uint256 hash) const
+bool WalletModel::transactionCanBeBumped(TxId hash) const
 {
     return feebumper::TransactionCanBeBumped(wallet, hash);
 }
 
-bool WalletModel::bumpFee(uint256 hash)
+bool WalletModel::bumpFee(TxId hash)
 {
     CCoinControl coin_control;
     coin_control.signalRbf = true;
@@ -714,7 +714,7 @@ bool WalletModel::bumpFee(uint256 hash)
         return false;
     }
     // commit the bumped transaction
-    uint256 txid;
+    TxId txid;
     if (feebumper::CommitTransaction(wallet, hash, std::move(mtx), errors, txid) != feebumper::Result::OK) {
         QMessageBox::critical(0, tr("Fee bump error"), tr("Could not commit transaction") + "<br />(" +
             QString::fromStdString(errors[0])+")");

@@ -114,19 +114,19 @@ void TestPackageSelection(const CChainParams& chainparams, CScript scriptPubKey,
     tx.vout.resize(1);
     tx.vout[0].nValue = 5000000000LL - 1000;
     // This tx has a low fee: 1000 satoshis
-    uint256 hashParentTx = tx.GetHash(); // save this txid for later use
+    TxId hashParentTx = tx.GetHash(); // save this txid for later use
     mempool.addUnchecked(hashParentTx, entry.Fee(1000).Time(GetTime()).SpendsCoinbase(true).FromTx(tx));
 
     // This tx has a medium fee: 10000 satoshis
     tx.vin[0].prevout.hash = txFirst[1]->GetHash();
     tx.vout[0].nValue = 5000000000LL - 10000;
-    uint256 hashMediumFeeTx = tx.GetHash();
+    TxId hashMediumFeeTx = tx.GetHash();
     mempool.addUnchecked(hashMediumFeeTx, entry.Fee(10000).Time(GetTime()).SpendsCoinbase(true).FromTx(tx));
 
     // This tx has a high fee, but depends on the first transaction
     tx.vin[0].prevout.hash = hashParentTx;
     tx.vout[0].nValue = 5000000000LL - 1000 - 50000; // 50k satoshi fee
-    uint256 hashHighFeeTx = tx.GetHash();
+    TxId hashHighFeeTx = tx.GetHash();
     mempool.addUnchecked(hashHighFeeTx, entry.Fee(50000).Time(GetTime()).SpendsCoinbase(false).FromTx(tx));
 
     std::unique_ptr<CBlockTemplate> pblocktemplate = AssemblerForTest(chainparams).CreateNewBlock(scriptPubKey);
@@ -137,7 +137,7 @@ void TestPackageSelection(const CChainParams& chainparams, CScript scriptPubKey,
     // Test that a package below the block min tx fee doesn't get included
     tx.vin[0].prevout.hash = hashHighFeeTx;
     tx.vout[0].nValue = 5000000000LL - 1000 - 50000; // 0 fee
-    uint256 hashFreeTx = tx.GetHash();
+    TxId hashFreeTx = tx.GetHash();
     mempool.addUnchecked(hashFreeTx, entry.Fee(0).FromTx(tx));
     size_t freeTxSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
@@ -147,7 +147,7 @@ void TestPackageSelection(const CChainParams& chainparams, CScript scriptPubKey,
 
     tx.vin[0].prevout.hash = hashFreeTx;
     tx.vout[0].nValue = 5000000000LL - 1000 - 50000 - feeToUse;
-    uint256 hashLowFeeTx = tx.GetHash();
+    TxId hashLowFeeTx = tx.GetHash();
     mempool.addUnchecked(hashLowFeeTx, entry.Fee(feeToUse).FromTx(tx));
     pblocktemplate = AssemblerForTest(chainparams).CreateNewBlock(scriptPubKey);
     // Verify that the free tx and the low fee tx didn't get selected
@@ -174,7 +174,7 @@ void TestPackageSelection(const CChainParams& chainparams, CScript scriptPubKey,
     tx.vout.resize(2);
     tx.vout[0].nValue = 5000000000LL - 100000000;
     tx.vout[1].nValue = 100000000; // 1BTC output
-    uint256 hashFreeTx2 = tx.GetHash();
+    TxId hashFreeTx2 = tx.GetHash();
     mempool.addUnchecked(hashFreeTx2, entry.Fee(0).SpendsCoinbase(true).FromTx(tx));
 
     // This tx can't be mined by itself
@@ -182,7 +182,7 @@ void TestPackageSelection(const CChainParams& chainparams, CScript scriptPubKey,
     tx.vout.resize(1);
     feeToUse = blockMinFeeRate.GetFee(freeTxSize);
     tx.vout[0].nValue = 5000000000LL - 100000000 - feeToUse;
-    uint256 hashLowFeeTx2 = tx.GetHash();
+    TxId hashLowFeeTx2 = tx.GetHash();
     mempool.addUnchecked(hashLowFeeTx2, entry.Fee(feeToUse).SpendsCoinbase(false).FromTx(tx));
     pblocktemplate = AssemblerForTest(chainparams).CreateNewBlock(scriptPubKey);
 
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
     std::unique_ptr<CBlockTemplate> pblocktemplate;
     CMutableTransaction tx,tx2;
     CScript script;
-    uint256 hash;
+    TxId hash;
     TestMemPoolEntryHelper entry;
     entry.nFee = 11;
     entry.nHeight = 11;

@@ -130,16 +130,16 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
     stack.push_back(new CCoinsViewCacheTest(&base)); // Start with one cache.
 
     // Use a limited set of random transaction ids, so we do test overwriting entries.
-    std::vector<uint256> txids;
+    std::vector<TxId> txids;
     txids.resize(NUM_SIMULATION_ITERATIONS / 8);
     for (unsigned int i = 0; i < txids.size(); i++) {
-        txids[i] = InsecureRand256();
+        txids[i] = TxId(InsecureRand256());
     }
 
     for (unsigned int i = 0; i < NUM_SIMULATION_ITERATIONS; i++) {
         // Do a random modification.
         {
-            uint256 txid = txids[InsecureRandRange(txids.size())]; // txid we're going to modify in this iteration.
+            TxId txid = txids[InsecureRandRange(txids.size())]; // txid we're going to modify in this iteration.
             Coin& coin = result[COutPoint(txid, 0)];
 
             // Determine whether to test HaveCoin before or after Access* (or both). As these functions
@@ -261,7 +261,7 @@ UtxoData utxoData;
 
 UtxoData::iterator FindRandomFrom(const std::set<COutPoint> &utxoSet) {
     assert(utxoSet.size());
-    auto utxoSetIt = utxoSet.lower_bound(COutPoint(InsecureRand256(), 0));
+    auto utxoSetIt = utxoSet.lower_bound(COutPoint(TxId(InsecureRand256()), 0));
     if (utxoSetIt == utxoSet.end()) {
         utxoSetIt = utxoSet.begin();
     }

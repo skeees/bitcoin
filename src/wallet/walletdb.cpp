@@ -51,7 +51,7 @@ bool CWalletDB::WriteTx(const CWalletTx& wtx)
     return WriteIC(std::make_pair(std::string("tx"), wtx.GetHash()), wtx);
 }
 
-bool CWalletDB::EraseTx(uint256 hash)
+bool CWalletDB::EraseTx(TxId hash)
 {
     return EraseIC(std::make_pair(std::string("tx"), hash));
 }
@@ -230,7 +230,7 @@ public:
     bool fIsEncrypted;
     bool fAnyUnordered;
     int nFileVersion;
-    std::vector<uint256> vWalletUpgrade;
+    std::vector<TxId> vWalletUpgrade;
 
     CWalletScanState() {
         nKeys = nCKeys = nWatchKeys = nKeyMeta = 0;
@@ -263,7 +263,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         }
         else if (strType == "tx")
         {
-            uint256 hash;
+            TxId hash;
             ssKey >> hash;
             CWalletTx wtx;
             ssValue >> wtx;
@@ -602,7 +602,7 @@ DBErrors CWalletDB::LoadWallet(CWallet* pwallet)
     if ((wss.nKeys + wss.nCKeys + wss.nWatchKeys) != wss.nKeyMeta)
         pwallet->UpdateTimeFirstKey(1);
 
-    for (uint256 hash : wss.vWalletUpgrade)
+    for (TxId hash : wss.vWalletUpgrade)
         WriteTx(pwallet->mapWallet[hash]);
 
     // Rewrite encrypted wallets of versions 0.4.0 and 0.5.0rc:
@@ -624,7 +624,7 @@ DBErrors CWalletDB::LoadWallet(CWallet* pwallet)
     return result;
 }
 
-DBErrors CWalletDB::FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx)
+DBErrors CWalletDB::FindWalletTx(std::vector<TxId>& vTxHash, std::vector<CWalletTx>& vWtx)
 {
     DBErrors result = DB_LOAD_OK;
 
@@ -661,7 +661,7 @@ DBErrors CWalletDB::FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWal
             std::string strType;
             ssKey >> strType;
             if (strType == "tx") {
-                uint256 hash;
+                TxId hash;
                 ssKey >> hash;
 
                 CWalletTx wtx;
@@ -683,10 +683,10 @@ DBErrors CWalletDB::FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWal
     return result;
 }
 
-DBErrors CWalletDB::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<uint256>& vTxHashOut)
+DBErrors CWalletDB::ZapSelectTx(std::vector<TxId>& vTxHashIn, std::vector<TxId>& vTxHashOut)
 {
     // build list of wallet TXs and hashes
-    std::vector<uint256> vTxHash;
+    std::vector<TxId> vTxHash;
     std::vector<CWalletTx> vWtx;
     DBErrors err = FindWalletTx(vTxHash, vWtx);
     if (err != DB_LOAD_OK) {
@@ -698,8 +698,8 @@ DBErrors CWalletDB::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<uin
 
     // erase each matching wallet TX
     bool delerror = false;
-    std::vector<uint256>::iterator it = vTxHashIn.begin();
-    for (uint256 hash : vTxHash) {
+    std::vector<TxId>::iterator it = vTxHashIn.begin();
+    for (TxId hash : vTxHash) {
         while (it < vTxHashIn.end() && (*it) < hash) {
             it++;
         }
@@ -724,13 +724,13 @@ DBErrors CWalletDB::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<uin
 DBErrors CWalletDB::ZapWalletTx(std::vector<CWalletTx>& vWtx)
 {
     // build list of wallet TXs
-    std::vector<uint256> vTxHash;
+    std::vector<TxId> vTxHash;
     DBErrors err = FindWalletTx(vTxHash, vWtx);
     if (err != DB_LOAD_OK)
         return err;
 
     // erase each wallet TX
-    for (uint256& hash : vTxHash) {
+    for (TxId& hash : vTxHash) {
         if (!EraseTx(hash))
             return DB_CORRUPT;
     }

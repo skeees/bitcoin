@@ -54,7 +54,7 @@ struct CoinEntry {
 
 }
 
-CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true) 
+CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true)
 {
 }
 
@@ -236,13 +236,13 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     return WriteBatch(batch, true);
 }
 
-bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
+bool CBlockTreeDB::ReadTxIndex(const TxId &txid, CDiskTxPos &pos) {
     return Read(std::make_pair(DB_TXINDEX, txid), pos);
 }
 
-bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&vect) {
+bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<TxId, CDiskTxPos> >&vect) {
     CDBBatch batch(*this);
-    for (std::vector<std::pair<uint256,CDiskTxPos> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
+    for (std::vector<std::pair<TxId,CDiskTxPos> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
         batch.Write(std::make_pair(DB_TXINDEX, it->first), it->second);
     return WriteBatch(batch);
 }
@@ -363,7 +363,7 @@ public:
  */
 bool CCoinsViewDB::Upgrade() {
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
-    pcursor->Seek(std::make_pair(DB_COINS, uint256()));
+    pcursor->Seek(std::make_pair(DB_COINS, TxId()));
     if (!pcursor->Valid()) {
         return true;
     }
@@ -375,8 +375,8 @@ bool CCoinsViewDB::Upgrade() {
     size_t batch_size = 1 << 24;
     CDBBatch batch(db);
     int reportDone = 0;
-    std::pair<unsigned char, uint256> key;
-    std::pair<unsigned char, uint256> prev_key = {DB_COINS, uint256()};
+    std::pair<unsigned char, TxId> key;
+    std::pair<unsigned char, TxId> prev_key = {DB_COINS, TxId()};
     while (pcursor->Valid()) {
         boost::this_thread::interruption_point();
         if (ShutdownRequested()) {
@@ -419,7 +419,7 @@ bool CCoinsViewDB::Upgrade() {
         }
     }
     db.WriteBatch(batch);
-    db.CompactRange({DB_COINS, uint256()}, key);
+    db.CompactRange({DB_COINS, TxId()}, key);
     uiInterface.ShowProgress("", 100, false);
     LogPrintf("[%s].\n", ShutdownRequested() ? "CANCELLED" : "DONE");
     return !ShutdownRequested();

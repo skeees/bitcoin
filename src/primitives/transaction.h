@@ -14,15 +14,29 @@
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 
+struct TxId : public uint256
+{
+    TxId() : uint256() {}
+    explicit TxId(const uint256& hash_) : uint256(hash_) {}
+    using uint256::uint256;
+};
+
+struct WTxId : public uint256
+{
+    WTxId() : uint256() {}
+    explicit WTxId(const uint256& hash_) : uint256(hash_) {}
+    using uint256::uint256;
+};
+
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
 class COutPoint
 {
 public:
-    uint256 hash;
+    TxId hash;
     uint32_t n;
 
     COutPoint(): n((uint32_t) -1) { }
-    COutPoint(const uint256& hashIn, uint32_t nIn): hash(hashIn), n(nIn) { }
+    COutPoint(const TxId& hashIn, uint32_t nIn): hash(hashIn), n(nIn) { }
 
     ADD_SERIALIZE_METHODS;
 
@@ -99,7 +113,7 @@ public:
     }
 
     explicit CTxIn(COutPoint prevoutIn, CScript scriptSigIn=CScript(), uint32_t nSequenceIn=SEQUENCE_FINAL);
-    CTxIn(uint256 hashPrevTx, uint32_t nOut, CScript scriptSigIn=CScript(), uint32_t nSequenceIn=SEQUENCE_FINAL);
+    CTxIn(TxId hashPrevTx, uint32_t nOut, CScript scriptSigIn=CScript(), uint32_t nSequenceIn=SEQUENCE_FINAL);
 
     ADD_SERIALIZE_METHODS;
 
@@ -285,9 +299,9 @@ public:
 
 private:
     /** Memory only. */
-    const uint256 hash;
+    const TxId hash;
 
-    uint256 ComputeHash() const;
+    TxId ComputeHash() const;
 
 public:
     /** Construct a CTransaction that qualifies as IsNull() */
@@ -311,12 +325,12 @@ public:
         return vin.empty() && vout.empty();
     }
 
-    const uint256& GetHash() const {
+    const TxId& GetHash() const {
         return hash;
     }
 
     // Compute a hash that includes both transaction and witness data
-    uint256 GetWitnessHash() const;
+    WTxId GetWitnessHash() const;
 
     // Return sum of txouts.
     CAmount GetValueOut() const;
@@ -388,7 +402,7 @@ struct CMutableTransaction
     /** Compute the hash of this CMutableTransaction. This is computed on the
      * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
      */
-    uint256 GetHash() const;
+    TxId GetHash() const;
 
     friend bool operator==(const CMutableTransaction& a, const CMutableTransaction& b)
     {
