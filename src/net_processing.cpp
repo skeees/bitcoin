@@ -981,10 +981,11 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
                 if (mapOrphanTransactions.count(inv.hash)) return true;
             }
 
+            TxId txid(inv.hash);
             return recentRejects->contains(inv.hash) ||
                    mempool.exists(inv.hash) ||
-                   pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 0)) || // Best effort: only try output 0 and 1
-                   pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 1));
+                   pcoinsTip->HaveCoinInCache(COutPoint(txid, 0)) || // Best effort: only try output 0 and 1
+                   pcoinsTip->HaveCoinInCache(COutPoint(txid, 1));
         }
     case MSG_BLOCK:
     case MSG_WITNESS_BLOCK:
@@ -2144,7 +2145,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             mempool.check(pcoinsTip.get());
             RelayTransaction(tx, connman);
             for (unsigned int i = 0; i < tx.vout.size(); i++) {
-                vWorkQueue.emplace_back(inv.hash, i);
+                vWorkQueue.emplace_back(TxId(inv.hash), i);
             }
 
             pfrom->nLastTXTime = GetTime();
@@ -2167,7 +2168,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 {
                     const CTransactionRef& porphanTx = (*mi)->second.tx;
                     const CTransaction& orphanTx = *porphanTx;
-                    const uint256& orphanHash = orphanTx.GetHash();
+                    const TxId& orphanHash = orphanTx.GetHash();
                     NodeId fromPeer = (*mi)->second.fromPeer;
                     bool fMissingInputs2 = false;
                     // Use a dummy CValidationState so someone can't setup nodes to counter-DoS based on orphan

@@ -1009,7 +1009,7 @@ UniValue gettxout(const JSONRPCRequest& request)
     UniValue ret(UniValue::VOBJ);
 
     std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    TxId hash(uint256S(strHash));
     int n = request.params[1].get_int();
     COutPoint out(hash, n);
     bool fMempool = true;
@@ -1563,7 +1563,7 @@ UniValue getchaintxstats(const JSONRPCRequest& request)
             pindex = chainActive.Tip();
         }
     }
-    
+
     assert(pindex != nullptr);
 
     if (request.params[0].isNull()) {

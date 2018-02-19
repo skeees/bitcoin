@@ -421,7 +421,7 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
 
         for (size_t i = (fCheckMemPool) ? 1 : 0; i < uriParts.size(); i++)
         {
-            uint256 txid;
+            TxId txid;
             int32_t nOutput;
             std::string strTxid = uriParts[i].substr(0, uriParts[i].find('-'));
             std::string strOutput = uriParts[i].substr(uriParts[i].find('-')+1);
