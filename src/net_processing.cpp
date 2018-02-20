@@ -104,6 +104,10 @@ namespace {
      * Memory used: 1.3 MB
      */
     std::unique_ptr<CRollingBloomFilter> recentRejects;
+    /**
+     * Filter for transactions that were recently mined
+     */
+    std::unique_ptr<CRollingBloomFilter> recentInclusions;
     uint256 hashRecentRejectsChainTip;
 
     /** Blocks that are in flight, and that are in the queue to be downloaded. Protected by cs_main. */
@@ -191,6 +195,8 @@ struct CNodeState {
     bool fPreferHeaders;
     //! Whether this peer wants invs or cmpctblocks (when possible) for block announcements.
     bool fPreferHeaderAndIDs;
+    //! Whether this peer relays and receives witness ids for transaction invs
+    bool m_uses_witness_id_relay;
     /**
       * Whether this peer will send us cmpctblocks if we request them.
       * This is not used to gate request logic, as we really only care about fSupportsDesiredCmpctVersion,
@@ -255,6 +261,7 @@ struct CNodeState {
         fPreferredDownload = false;
         fPreferHeaders = false;
         fPreferHeaderAndIDs = false;
+        m_uses_witness_id_relay = false;
         fProvidesHeaderAndIDs = false;
         fHaveWitness = false;
         fWantsCmpctWitness = false;
@@ -964,6 +971,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
     {
     case MSG_TX:
     case MSG_WITNESS_TX:
+    case MSG_WITNESS_TX_WTXID:
         {
             assert(recentRejects);
             if (chainActive.Tip()->GetBlockHash() != hashRecentRejectsChainTip)
@@ -981,11 +989,19 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
                 if (mapOrphanTransactions.count(inv.hash)) return true;
             }
 
-            TxId txid(inv.hash);
-            return recentRejects->contains(inv.hash) ||
-                   mempool.exists(txid) ||
-                   pcoinsTip->HaveCoinInCache(COutPoint(txid, 0)) || // Best effort: only try output 0 and 1
-                   pcoinsTip->HaveCoinInCache(COutPoint(txid, 1));
+            if (recentRejects->contains(inv.hash))
+                return true;
+
+            if (inv.type & MSG_WTXID_FLAG)
+            {
+                WTxId id(inv.hash);
+                return mempool.exists(id) || recentInclusions->contains(id);
+            } else {
+                TxId id(inv.hash);
+                return mempool.exists(id) ||
+                    pcoinsTip->HaveCoinInCache(COutPoint(TxId(inv.hash), 0)) || // Best effort: only try output 0 and 1
+                    pcoinsTip->HaveCoinInCache(COutPoint(TxId(inv.hash), 1));
+            }
         }
     case MSG_BLOCK:
     case MSG_WITNESS_BLOCK:
@@ -998,9 +1014,16 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 static void RelayTransaction(const CTransaction& tx, CConnman* connman)
 {
     CInv inv(MSG_TX, tx.GetHash());
-    connman->ForEachNode([&inv](CNode* pnode)
+    CInv invWit(MSG_TX, tx.GetWitnessHash());
+
+    connman->ForEachNode([&inv,&invWit](CNode* pnode)
     {
-        pnode->PushInventory(inv);
+        if(State(pnode->GetId())->m_uses_witness_id_relay) {
+            pnode->PushInventory(inv);
+        }
+        else {
+            pnode->PushInventory(invWit);
+        }
     });
 }
 
@@ -1192,7 +1215,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
     {
         LOCK(cs_main);
 
-        while (it != pfrom->vRecvGetData.end() && (it->type == MSG_TX || it->type == MSG_WITNESS_TX)) {
+        while (it != pfrom->vRecvGetData.end() && (it->type == MSG_TX || it->type == MSG_WITNESS_TX || it->type == MSG_WITNESS_TX_WTXID)) {
             if (interruptMsgProc)
                 return;
             // Don't bother if send buffer is too full to respond anyway
@@ -1210,7 +1233,13 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                 connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *mi->second));
                 push = true;
             } else if (pfrom->timeLastMempoolReq) {
-                auto txinfo = mempool.info(TxId(inv.hash));
+                TxMempoolInfo txinfo;
+                if(it->type == MSG_WITNESS_TX_WTXID) {
+                    txinfo = mempool.info(WTxId(inv.hash));
+                } else {
+                    txinfo = mempool.info(TxId(inv.hash));
+                }
+
                 // To protect privacy, do not answer getdata using the mempool when
                 // that TX couldn't have been INVed in reply to a MEMPOOL request.
                 if (txinfo.tx && txinfo.nTime <= pfrom->timeLastMempoolReq) {
@@ -1251,9 +1280,15 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
 
 uint32_t GetFetchFlags(CNode* pfrom) {
     uint32_t nFetchFlags = 0;
+
     if ((pfrom->GetLocalServices() & NODE_WITNESS) && State(pfrom->GetId())->fHaveWitness) {
         nFetchFlags |= MSG_WITNESS_FLAG;
     }
+
+    if (State(pfrom->GetId())->m_uses_witness_id_relay) {
+        nFetchFlags |= MSG_WTXID_FLAG;
+    }
+
     return nFetchFlags;
 }
 
@@ -1659,6 +1694,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             State(pfrom->GetId())->fHaveWitness = true;
         }
 
+        if(nVersion >= INV_BY_WTXID_VERSION)
+        {
+            LOCK(cs_main);
+            State(pfrom->GetId())->m_uses_witness_id_relay = true;
+        }
+
         // Potentially mark this peer as a preferred download peer.
         {
         LOCK(cs_main);
@@ -1853,7 +1894,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
         }
     }
-
 
     else if (strCommand == NetMsgType::INV)
     {
@@ -2127,7 +2167,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         vRecv >> ptx;
         const CTransaction& tx = *ptx;
 
-        CInv inv(MSG_TX, tx.GetHash());
+        CInv inv;
+        if(State(pfrom->GetId())->m_uses_witness_id_relay) {
+            inv = CInv(MSG_TX, tx.GetWitnessHash());
+        } else {
+            inv = CInv(MSG_TX, tx.GetHash());
+        }
         pfrom->AddInventoryKnown(inv);
 
         LOCK2(cs_main, g_cs_orphans);
@@ -2208,6 +2253,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                             assert(recentRejects);
                             recentRejects->insert(orphanHash);
                         }
+
+                        recentRejects->insert(orphanTx.GetWitnessHash());
                     }
                     mempool.check(pcoinsTip.get());
                 }
@@ -2245,6 +2292,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 // We will continue to reject this tx since it has rejected
                 // parents so avoid re-requesting it from other peers.
                 recentRejects->insert(tx.GetHash());
+                recentRejects->insert(tx.GetWitnessHash());
             }
         } else {
             if (!tx.HasWitness() && !state.CorruptionPossible()) {
@@ -3521,7 +3569,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
                     }
                     if (pto->pfilter && !pto->pfilter->IsRelevantAndUpdate(*txinfo.tx)) continue;
                     // Send
-                    vInv.push_back(CInv(MSG_TX, hash));
+                    vInv.push_back(CInv(MSG_TX, state.m_uses_witness_id_relay ? static_cast<uint256>(txinfo.tx->GetWitnessHash()) : static_cast<uint256>(hash)));
                     nRelayedTransactions++;
                     {
                         // Expire old relay messages
@@ -3531,7 +3579,12 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
                             vRelayExpiration.pop_front();
                         }
 
-                        auto ret = mapRelay.insert(std::make_pair(hash, std::move(txinfo.tx)));
+                        auto ret = mapRelay.insert(std::make_pair(hash, txinfo.tx));
+                        if (ret.second) {
+                            vRelayExpiration.push_back(std::make_pair(nNow + 15 * 60 * 1000000, ret.first));
+                        }
+
+                        ret = mapRelay.insert(std::make_pair(txinfo.tx->GetWitnessHash(), std::move(txinfo.tx)));
                         if (ret.second) {
                             vRelayExpiration.push_back(std::make_pair(nNow + 15 * 60 * 1000000, ret.first));
                         }

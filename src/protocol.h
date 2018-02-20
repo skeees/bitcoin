@@ -360,7 +360,8 @@ public:
 
 /** getdata message type flags */
 const uint32_t MSG_WITNESS_FLAG = 1 << 30;
-const uint32_t MSG_TYPE_MASK    = 0xffffffff >> 2;
+const uint32_t MSG_WTXID_FLAG = 1 << 29;
+const uint32_t MSG_TYPE_MASK    = 0xffffffff >> 3;
 
 /** getdata / inv message types.
  * These numbers are defined by the protocol. When adding a new value, be sure
@@ -377,6 +378,7 @@ enum GetDataMsg
     MSG_WITNESS_BLOCK = MSG_BLOCK | MSG_WITNESS_FLAG, //!< Defined in BIP144
     MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,       //!< Defined in BIP144
     MSG_FILTERED_WITNESS_BLOCK = MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG,
+    MSG_WITNESS_TX_WTXID = MSG_WITNESS_TX | MSG_WTXID_FLAG
 };
 
 /** inv message data */

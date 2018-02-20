@@ -163,6 +163,10 @@ std::string CInv::GetCommand() const
     std::string cmd;
     if (type & MSG_WITNESS_FLAG)
         cmd.append("witness-");
+
+    if (type & MSG_WTXID_FLAG)
+        cmd.append("wtxid-");
+
     int masked = type & MSG_TYPE_MASK;
     switch (masked)
     {

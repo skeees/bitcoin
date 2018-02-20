@@ -42,4 +42,7 @@ static const int SHORT_IDS_BLOCKS_VERSION = 70014;
 //! not banning for invalid compact blocks starts with this version
 static const int INVALID_CB_NO_BAN_VERSION = 70015;
 
+//! inv messages contain witness tx ids starts with this version
+static const int INV_BY_WTXID_VERSION = 70016;
+
 #endif // BITCOIN_VERSION_H

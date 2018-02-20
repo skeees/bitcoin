@@ -796,8 +796,8 @@ void CTxMemPool::queryHashes(std::vector<TxId>& vtxid)
     }
 }
 
-static TxMempoolInfo GetInfo(CTxMemPool::indexed_transaction_set::const_iterator it) {
-    return TxMempoolInfo{it->GetSharedTx(), it->GetTime(), CFeeRate(it->GetFee(), it->GetTxSize()), it->GetModifiedFee() - it->GetFee()};
+static TxMempoolInfo GetInfo(const CTxMemPoolEntry& it) {
+    return TxMempoolInfo{it.GetSharedTx(), it.GetTime(), CFeeRate(it.GetFee(), it.GetTxSize()), it.GetModifiedFee() - it.GetFee()};
 }
 
 std::vector<TxMempoolInfo> CTxMemPool::infoAll() const
@@ -808,7 +808,7 @@ std::vector<TxMempoolInfo> CTxMemPool::infoAll() const
     std::vector<TxMempoolInfo> ret;
     ret.reserve(mapTx.size());
     for (auto it : iters) {
-        ret.push_back(GetInfo(it));
+        ret.push_back(GetInfo(*it));
     }
 
     return ret;
@@ -829,7 +829,16 @@ TxMempoolInfo CTxMemPool::info(const TxId& hash) const
     indexed_transaction_set::const_iterator i = mapTx.find(hash);
     if (i == mapTx.end())
         return TxMempoolInfo();
-    return GetInfo(i);
+    return GetInfo(*i);
+}
+
+TxMempoolInfo CTxMemPool::info(const WTxId& hash) const
+{
+    LOCK(cs);
+    indexed_transaction_set::index<WTxId>::type::const_iterator i = mapTx.get<WTxId>().find(hash);
+    if (i == mapTx.get<WTxId>().end())
+        return TxMempoolInfo();
+    return GetInfo(*i);
 }
 
 void CTxMemPool::PrioritiseTransaction(const TxId& hash, const CAmount& nFeeDelta)
