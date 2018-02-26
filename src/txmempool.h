@@ -14,6 +14,7 @@
 #include <string>
 
 #include <amount.h>
+#include <bloom.h>
 #include <coins.h>
 #include <indirectmap.h>
 #include <policy/feerate.h>
@@ -502,6 +503,13 @@ public:
             >
         >
     > indexed_transaction_set;
+
+    /**
+     * Filter for transactions that were recently mined
+     * Used in the net layer to avoid re-reques
+     */
+    std::unique_ptr<CRollingBloomFilter> recentInclusions;
+    bool wasRecentlyMined(const WTxId& wtxid) { return recentInclusions->contains(wtxid); };
 
     mutable CCriticalSection cs;
     indexed_transaction_set mapTx;

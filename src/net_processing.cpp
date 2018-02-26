@@ -104,10 +104,6 @@ namespace {
      * Memory used: 1.3 MB
      */
     std::unique_ptr<CRollingBloomFilter> recentRejects;
-    /**
-     * Filter for transactions that were recently mined
-     */
-    std::unique_ptr<CRollingBloomFilter> recentInclusions;
     uint256 hashRecentRejectsChainTip;
 
     /** Blocks that are in flight, and that are in the queue to be downloaded. Protected by cs_main. */
@@ -995,7 +991,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
             if (inv.type & MSG_WTXID_FLAG)
             {
                 WTxId id(inv.hash);
-                return mempool.exists(id) || recentInclusions->contains(id);
+                return mempool.exists(id) || mempool.wasRecentlyMined(id);
             } else {
                 TxId id(inv.hash);
                 return mempool.exists(id) ||
@@ -2190,7 +2186,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             mempool.check(pcoinsTip.get());
             RelayTransaction(tx, connman);
             for (unsigned int i = 0; i < tx.vout.size(); i++) {
-                vWorkQueue.emplace_back(TxId(inv.hash), i);
+                vWorkQueue.emplace_back(tx.GetHash(), i);
             }
 
             pfrom->nLastTXTime = GetTime();
@@ -2246,15 +2242,18 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                         // Probably non-standard or insufficient fee
                         LogPrint(BCLog::MEMPOOL, "   removed orphan tx %s\n", orphanHash.ToString());
                         vEraseQueue.push_back(orphanHash);
-                        if (!orphanTx.HasWitness() && !stateDummy.CorruptionPossible()) {
-                            // Do not use rejection cache for witness transactions or
-                            // witness-stripped transactions, as they can have been malleated.
-                            // See https://github.com/bitcoin/bitcoin/issues/8279 for details.
-                            assert(recentRejects);
-                            recentRejects->insert(orphanHash);
-                        }
 
-                        recentRejects->insert(orphanTx.GetWitnessHash());
+                        if(!stateDummy.CorruptionPossible()) {
+                            if (!orphanTx.HasWitness()) {
+                                // Do not use rejection cache for witness transactions or
+                                // witness-stripped transactions, as they can have been malleated.
+                                // See https://github.com/bitcoin/bitcoin/issues/8279 for details.
+                                assert(recentRejects);
+                                recentRejects->insert(orphanHash);
+                            } else {
+                                recentRejects->insert(orphanTx.GetWitnessHash());
+                            }
+                       }
                     }
                     mempool.check(pcoinsTip.get());
                 }
@@ -2292,7 +2291,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 // We will continue to reject this tx since it has rejected
                 // parents so avoid re-requesting it from other peers.
                 recentRejects->insert(tx.GetHash());
-                recentRejects->insert(tx.GetWitnessHash());
+                if(tx.HasWitness())
+                    recentRejects->insert(tx.GetWitnessHash());
             }
         } else {
             if (!tx.HasWitness() && !state.CorruptionPossible()) {
@@ -2304,8 +2304,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 if (RecursiveDynamicUsage(*ptx) < 100000) {
                     AddToCompactExtraTransactions(ptx);
                 }
-            } else if (tx.HasWitness() && RecursiveDynamicUsage(*ptx) < 100000) {
-                AddToCompactExtraTransactions(ptx);
+            } else if (tx.HasWitness()) {
+                recentRejects->insert(tx.GetWitnessHash());
+                if(RecursiveDynamicUsage(*ptx) < 100000)
+                    AddToCompactExtraTransactions(ptx);
             }
 
             if (pfrom->fWhitelisted && gArgs.GetBoolArg("-whitelistforcerelay", DEFAULT_WHITELISTFORCERELAY)) {
