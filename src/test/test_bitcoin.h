@@ -18,6 +18,8 @@
 
 #include <boost/thread.hpp>
 
+class ValidationLayer;
+
 extern uint256 insecure_rand_seed;
 extern FastRandomContext insecure_rand_ctx;
 
@@ -64,6 +66,7 @@ struct TestingSetup: public BasicTestingSetup {
     CConnman* connman;
     CScheduler scheduler;
     std::unique_ptr<PeerLogicValidation> peerLogic;
+    std::unique_ptr<ValidationLayer> m_validation_layer;
 
     explicit TestingSetup(const std::string& chainName = CBaseChainParams::MAIN);
     ~TestingSetup();
