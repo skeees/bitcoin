@@ -9,20 +9,28 @@
 #include <memory>
 
 #include <boost/test/unit_test.hpp>
+#include <walletinitinterface.h>
 
-std::unique_ptr<CConnman> g_connman;
-
-[[noreturn]] void Shutdown(void* parg)
-{
-  std::exit(EXIT_SUCCESS);
+[[noreturn]] void Shutdown(void* parg) {
+    std::exit(EXIT_SUCCESS);
 }
 
-[[noreturn]] void StartShutdown()
+class DummyWalletInit : public WalletInitInterface
 {
-  std::exit(EXIT_SUCCESS);
-}
+public:
+    void AddWalletOptions() const override {}
+    bool ParameterInteraction() const override { return true; }
+    void RegisterRPC(CRPCTable&) const override {}
+    bool Verify() const override { return true; }
+    bool Open() const override
+    {
+        LogPrintf("No wallet support compiled in!\n");
+        return true;
+    }
+    void Start(CScheduler& scheduler) const override {}
+    void Flush() const override {}
+    void Stop() const override {}
+    void Close() const override {}
+};
 
-bool ShutdownRequested()
-{
-  return false;
-}
+const WalletInitInterface& g_wallet_init_interface = DummyWalletInit();
