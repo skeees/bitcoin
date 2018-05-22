@@ -808,7 +808,7 @@ void InitLogging()
     // Add newlines to the logfile to distinguish this execution from the last
     // one; called before console logging is set up, so this is only sent to
     // debug.log.
-    LogPrintf("\n\n\n\n\n");
+    g_logger->LogPrintStr("\n\n\n\n\n");
 
     g_logger->m_print_to_console = gArgs.GetBoolArg("-printtoconsole", !gArgs.GetBoolArg("-daemon", false));
     g_logger->m_log_timestamps = gArgs.GetBoolArg("-logtimestamps", DEFAULT_LOGTIMESTAMPS);
@@ -1215,6 +1215,8 @@ bool AppInitMain()
             return InitError(strprintf("Could not open debug log file %s",
                                        g_logger->m_file_path.string()));
         }
+
+        async_logging::Init();
     }
 
     if (!g_logger->m_log_timestamps)
