@@ -101,6 +101,8 @@ BITCOIN_CORE_H = \
   compressor.h \
   consensus/consensus.h \
   consensus/tx_verify.h \
+  core/consumerthread.h \
+  core/producerconsumerqueue.h \
   core_io.h \
   core_memusage.h \
   cuckoocache.h \
@@ -169,6 +171,7 @@ BITCOIN_CORE_H = \
   utilmoneystr.h \
   utiltime.h \
   validation.h \
+  validation_layer.h \
   validationinterface.h \
   versionbits.h \
   walletinitinterface.h \
@@ -234,6 +237,7 @@ libbitcoin_server_a_SOURCES = \
   txmempool.cpp \
   ui_interface.cpp \
   validation.cpp \
+  validation_layer.cpp \
   validationinterface.cpp \
   versionbits.cpp \
   $(BITCOIN_CORE_H)
