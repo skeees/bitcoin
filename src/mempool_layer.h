@@ -61,13 +61,13 @@ private:
     const std::function<void()> m_on_ready;
 };
 
-class MempoolLayer : public AsyncLayer
+class MempoolLayer : public AsyncLayer<TransactionSubmissionRequest,TransactionSubmissionResponse>
 {
     friend TransactionSubmissionRequest;
 
 public:
     MempoolLayer(CTxMemPool& mempool)
-        : AsyncLayer(1000), m_mempool(mempool) {}
+        : AsyncLayer<TransactionSubmissionRequest,TransactionSubmissionResponse>(1000), m_mempool(mempool) {}
 
     //! Submit a transaction for asynchronous validation
     std::future<TransactionSubmissionResponse> SubmitForValidation(

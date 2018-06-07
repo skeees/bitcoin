@@ -93,13 +93,13 @@ private:
  * Internally, a validation thread pulls validations requests from a queue, processes them and satisfies the promise
  * with the result of validation.
  */
-class ValidationLayer : public AsyncLayer
+class ValidationLayer : public AsyncLayer<BlockValidationRequest, BlockValidationResponse>
 {
     friend BlockValidationRequest;
 
 public:
     ValidationLayer(const CChainParams& chainparams)
-        : AsyncLayer(100), m_chainparams(chainparams) {}
+        : AsyncLayer<BlockValidationRequest,BlockValidationResponse>(100), m_chainparams(chainparams) {}
     ~ValidationLayer(){};
 
     //! Submit a block for asynchronous validation

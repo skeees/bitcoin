@@ -188,7 +188,7 @@ private:
         }
     }
 
-    void Process(const std::unique_ptr<WorkItem<PRODUCER_POLICY>> work) const
+    virtual void Process(const std::unique_ptr<WorkItem<PRODUCER_POLICY>> work) const
     {
         (*work)();
     }
